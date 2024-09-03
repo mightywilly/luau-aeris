@@ -112,7 +112,7 @@ public:
         for (int i = 0; i < 20; ++i)
         {
             bool engineTestDir = isDirectory(luauDirAbs + "/Client/Luau/tests");
-            bool luauTestDir = isDirectory(luauDirAbs + "/luau/tests/require");
+            bool luauTestDir = isDirectory(luauDirAbs + "/luau-aeris/tests/require");
 
             if (engineTestDir || luauTestDir)
             {
@@ -123,8 +123,8 @@ public:
                 }
                 else
                 {
-                    luauDirRel += "/luau";
-                    luauDirAbs += "/luau";
+                    luauDirRel += "/luau-aeris";
+                    luauDirAbs += "/luau-aeris";
                 }
 
 
