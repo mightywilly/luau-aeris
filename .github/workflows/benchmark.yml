@@ -16,7 +16,7 @@ jobs:
       matrix:
         os: [ubuntu-22.04]
         benchResultsRepo:
-          - { name: "luau-lang/benchmark-data", branch: "main" }
+          - { name: "thenullvek/luau-aeris-perfdata", branch: "master" }
 
     runs-on: ${{ matrix.os }}
     steps:
