@@ -1,4 +1,4 @@
-Luau ![CI](https://github.com/mightywilly/luau-aeris/actions/workflows/build.yml/badge.svg) [![codecov](https://codecov.io/gh/mightywilly/luau-aeris/branch/master/graph/badge.svg)](https://codecov.io/gh/mightywilly/luau-aeris)
+Luau ![CI](https://github.com/thenullvek/luau-aeris/actions/workflows/build.yml/badge.svg) [![codecov](https://codecov.io/gh/thenullvek/luau-aeris/branch/master/graph/badge.svg)](https://codecov.io/gh/thenullvek/luau-aeris)
 ====
 
 Luau (lowercase u, /ˈlu.aʊ/) is a fast, small, safe, gradually typed embeddable scripting language derived from [Lua](https://lua.org).
