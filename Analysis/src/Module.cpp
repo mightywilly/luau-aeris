@@ -15,6 +15,7 @@
 #include <algorithm>
 
 LUAU_FASTFLAG(LuauSolverV2);
+LUAU_DYNAMIC_FASTINT(LuauTypeSolverRelease)
 
 namespace Luau
 {
@@ -131,10 +132,39 @@ struct ClonePublicInterface : Substitution
             }
 
             ftv->level = TypeLevel{0, 0};
+            if (FFlag::LuauSolverV2 && DFInt::LuauTypeSolverRelease >= 645)
+                ftv->scope = nullptr;
         }
         else if (TableType* ttv = getMutable<TableType>(result))
         {
             ttv->level = TypeLevel{0, 0};
+            if (FFlag::LuauSolverV2 && DFInt::LuauTypeSolverRelease >= 645)
+                ttv->scope = nullptr;
+        }
+
+        if (FFlag::LuauSolverV2 && DFInt::LuauTypeSolverRelease >= 645)
+        {
+            if (auto freety = getMutable<FreeType>(result))
+            {
+                if (DFInt::LuauTypeSolverRelease >= 646)
+                {
+                    module->errors.emplace_back(
+                        freety->scope->location,
+                        module->name,
+                        InternalError{"Free type is escaping its module; please report this bug at "
+                                      "https://github.com/luau-lang/luau/issues"}
+                    );
+                    result = builtinTypes->errorRecoveryType();
+                }
+                else
+                {
+                    freety->scope = nullptr;
+                }
+            }
+            else if (auto genericty = getMutable<GenericType>(result))
+            {
+                genericty->scope = nullptr;
+            }
         }
 
         return result;
@@ -142,7 +172,35 @@ struct ClonePublicInterface : Substitution
 
     TypePackId clean(TypePackId tp) override
     {
-        return clone(tp);
+        if (FFlag::LuauSolverV2 && DFInt::LuauTypeSolverRelease >= 645)
+        {
+            auto clonedTp = clone(tp);
+            if (auto ftp = getMutable<FreeTypePack>(clonedTp))
+            {
+
+                if (DFInt::LuauTypeSolverRelease >= 646)
+                {
+                    module->errors.emplace_back(
+                        ftp->scope->location,
+                        module->name,
+                        InternalError{"Free type pack is escaping its module; please report this bug at "
+                                      "https://github.com/luau-lang/luau/issues"}
+                    );
+                    clonedTp = builtinTypes->errorRecoveryTypePack();
+                }
+                else
+                {
+                    ftp->scope = nullptr;
+                }
+            }
+            else if (auto gtp = getMutable<GenericTypePack>(clonedTp))
+                gtp->scope = nullptr;
+            return clonedTp;
+        }
+        else
+        {
+            return clone(tp);
+        }
     }
 
     TypeId cloneType(TypeId ty)

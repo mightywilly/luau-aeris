@@ -13,7 +13,7 @@
 using namespace Luau;
 
 LUAU_FASTFLAG(LuauSolverV2)
-LUAU_FASTFLAG(LuauUserDefinedTypeFunctions)
+LUAU_FASTFLAG(LuauUserDefinedTypeFunctions2)
 LUAU_DYNAMIC_FASTINT(LuauTypeFamilyApplicationCartesianProductLimit)
 
 struct TypeFunctionFixture : Fixture
@@ -386,6 +386,25 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "keyof_type_function_works_with_metatables")
     REQUIRE(tpm);
     CHECK_EQ("\"x\" | \"y\" | \"z\"", toString(tpm->wantedTp));
     CHECK_EQ("\"w\" | \"x\" | \"y\" | \"z\"", toString(tpm->givenTp));
+}
+
+TEST_CASE_FIXTURE(BuiltinsFixture, "keyof_single_entry_no_uniontype")
+{
+    if (!FFlag::LuauSolverV2)
+        return;
+
+    CheckResult result = check(R"(
+        local tbl_A = { abc = "value" }
+        local tbl_B = { a1 = nil, ["a2"] = nil }
+
+        type keyof_A = keyof<typeof(tbl_A)>
+        type keyof_B = keyof<typeof(tbl_B)>
+    )");
+
+    LUAU_REQUIRE_NO_ERRORS(result);
+
+    CHECK(toString(requireTypeAlias("keyof_A")) == "\"abc\"");
+    CHECK(toString(requireTypeAlias("keyof_B")) == "\"a1\" | \"a2\"");
 }
 
 TEST_CASE_FIXTURE(BuiltinsFixture, "keyof_type_function_errors_if_it_has_nontable_part")
@@ -908,6 +927,29 @@ TEST_CASE_FIXTURE(BuiltinsFixture, "index_type_function_works")
     CHECK_EQ("string", toString(tpm->givenTp));
 }
 
+TEST_CASE_FIXTURE(BuiltinsFixture, "index_wait_for_pending_no_crash")
+{
+    if (!FFlag::LuauSolverV2)
+        return;
+
+    CheckResult result = check(R"(
+        local PlayerData = {
+            Coins = 0,
+            Level = 1,
+            Exp = 0,
+            MaxExp = 100
+        }
+        type Keys = index<typeof(PlayerData), keyof<typeof(PlayerData)>>
+        -- This function makes it think that there's going to be a pending expansion
+        local function UpdateData(key: Keys, value)
+            PlayerData[key] = value
+        end
+        UpdateData("Coins", 2)
+    )");
+
+    // Should not crash!
+}
+
 TEST_CASE_FIXTURE(BuiltinsFixture, "index_type_function_works_w_array")
 {
     if (!FFlag::LuauSolverV2)
@@ -1205,18 +1247,20 @@ TEST_CASE_FIXTURE(ClassFixture, "rawget_type_function_errors_w_classes")
     CHECK(toString(result.errors[0]) == "Property '\"BaseField\"' does not exist on type 'BaseClass'");
 }
 
-TEST_CASE_FIXTURE(Fixture, "user_defined_type_function_errors")
+TEST_CASE_FIXTURE(Fixture, "fuzz_len_type_function_follow")
 {
-    if (!FFlag::LuauUserDefinedTypeFunctions)
-        return;
-
-    CheckResult result = check(R"(
-    type function foo()
-        return nil
-    end
+    // Should not fail assertions
+    check(R"(
+        local _
+        _ = true
+        for l0=_,_,# _ do
+        end
+        for l0=_,_ do
+        if _ then
+        _ += _
+        end
+        end
     )");
-    LUAU_CHECK_ERROR_COUNT(1, result);
-    CHECK(toString(result.errors[0]) == "This syntax is not supported");
 }
 
 TEST_SUITE_END();
